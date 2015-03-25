@@ -4,40 +4,70 @@
     android:layout_height="match_parent" android:orientation="vertical"
     tools:context=".MainActivity" tools:deviceIds="wear_square">
 
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
-        <TextView android:id="@+id/xView" android:text="X axis=0" android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
-        <TextView android:id="@+id/yView" android:text="Y axis=0" android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
-        <TextView android:id="@+id/zView" android:text="Z axis=0" android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            <TextView
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:text="Orientation"
+                android:textStyle="bold" />
+            <TextView
+                android:id="@+id/xOrientView"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:text="x = 0"/>
+            <TextView
+                android:id="@+id/yOrientView"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:text="y = 0"/>
+            <TextView
+                android:id="@+id/zOrientView"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:text="z = 0"/>
 
-    </LinearLayout>
+            <TextView
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:text="Accelerometer"
+                android:textStyle="bold" />
+            <TextView
+                android:id="@+id/xAccelView"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:text="x = 0"/>
+            <TextView
+                android:id="@+id/yAccelView"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:text="y = 0"/>
+            <TextView
+                android:id="@+id/zAccelView"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:text="z = 0"/>
 
-    <com.androidplot.xy.XYPlot
-        android:id="@+id/orientPlot"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        android:layout_weight="1"
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
 
-        androidPlot.domainLabel="Domain"
-        androidPlot.rangeLabel="Range"
-        androidPlot.titleWidget.labelPaint.textSize="@dimen/title_font_size"
-        androidPlot.domainLabelWidget.labelPaint.textSize="@dimen/domain_label_font_size"
-        androidPlot.rangeLabelWidget.labelPaint.textSize="@dimen/range_label_font_size"
+            <Button
+                android:id="@+id/btnStartLogging"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:text="Start" />
 
-        androidPlot.graphWidget.rangeLabelPaint.textSize="@dimen/range_tick_label_font_size"
-        androidPlot.graphWidget.rangeOriginLabelPaint.textSize="@dimen/range_tick_label_font_size"
-        androidPlot.graphWidget.domainLabelPaint.textSize="@dimen/domain_tick_label_font_size"
-        androidPlot.graphWidget.domainOriginLabelPaint.textSize="@dimen/domain_tick_label_font_size"
-        androidPlot.legendWidget.textPaint.textSize="@dimen/legend_text_font_size"
-        androidPlot.legendWidget.iconSizeMetrics.heightMetric.value="15dp"
-        androidPlot.legendWidget.iconSizeMetrics.widthMetric.value="15dp"
-        androidPlot.legendWidget.heightMetric.value="25dp"
-        androidPlot.legendWidget.positionMetrics.anchor="right_bottom"
-        androidPlot.graphWidget.gridLinePaint.color="#000000"/>
+            <Button
+                android:id="@+id/btnStopLogging"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:text="Stop" />
+
+        </LinearLayout>
 </LinearLayout>

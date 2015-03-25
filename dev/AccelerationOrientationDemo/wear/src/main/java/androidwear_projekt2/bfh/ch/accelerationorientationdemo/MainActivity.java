@@ -2,96 +2,58 @@ package androidwear_projekt2.bfh.ch.accelerationorientationdemo;
 
 import android.app.Activity;
 import android.content.Context;
-import android.graphics.Color;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
+import android.support.wearable.view.WatchViewStub;
+import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 
-import com.androidplot.ui.SizeLayoutType;
-import com.androidplot.ui.SizeMetrics;
-import com.androidplot.xy.BoundaryMode;
-import com.androidplot.xy.LineAndPointFormatter;
-import com.androidplot.xy.SimpleXYSeries;
-import com.androidplot.xy.XYPlot;
-import com.androidplot.xy.XYStepMode;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.wearable.Node;
+import com.google.android.gms.wearable.NodeApi;
+import com.google.android.gms.wearable.Wearable;
 
-import java.text.DecimalFormat;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
-public class MainActivity extends Activity implements SensorEventListener {
+public class MainActivity extends Activity implements SensorEventListener, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
-    private static final int HISTORY_SIZE = 400;
+    private final static long CONNECTION_TIME_OUT_MS = 100;
+    private final static String MESSAGE_PATH_ACCEL = "accelValues";
+    private final static String MESSAGE_PATH_ORIENT = "orientValues";
 
-    private SensorManager mSensorManager;
-    private Sensor mOrientation;
+    private SensorManager mSensorManager = null;
+    private Sensor mOrientation = null;
+    private Sensor mAccelerometer = null;
 
-    private XYPlot orientPlot = null;
+    private GoogleApiClient client = null;
+    private String nodeId = null;
 
-    private SimpleXYSeries xSeries = null;
-    private SimpleXYSeries ySeries = null;
-    private SimpleXYSeries zSeries = null;
+    private Button mBtnStartLogging = null;
+    private Button mBtnStopLogging = null;
+    private TextView mXAccelView = null;
+    private TextView mYAccelView = null;
+    private TextView mZAccelView = null;
+    private TextView mXOrientView = null;
+    private TextView mYOrientView = null;
+    private TextView mZOrientView = null;
 
-    private TextView mXView;
-    private TextView mYView;
-    private TextView mZView;
+    private boolean started = false;
+    private String xValue = "";
+    private String yValue = "";
+    private String zValue = "";
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.rect_activity_main);
-
-        mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        mOrientation = mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION);
-
-        mXView = (TextView) findViewById(R.id.xView);
-        mYView = (TextView) findViewById(R.id.yView);
-        mZView = (TextView) findViewById(R.id.zView);
-
-        initOrientPlot();
-
-        List<Sensor> mListSensors = mSensorManager.getSensorList(Sensor.TYPE_ALL);
-
-        for (Sensor sensor:mListSensors) {
-            System.out.println(sensor.getName());
-        }
-    }
-
-    @Override
-    public void onSensorChanged(SensorEvent event) {
-        float mXValue = event.values[0];
-        float mYValue = event.values[1];
-        float mZValue = event.values[2];
-
-        System.out.println(mXValue);
-
-        mXView.setText("X axis=" + String.valueOf(mXValue));
-        mYView.setText("Y axis=" + String.valueOf(mYValue));
-        mZView.setText("Z axis=" + String.valueOf(mZValue));
-
-        if (xSeries.size() > HISTORY_SIZE) {
-            xSeries.removeFirst();
-            ySeries.removeFirst();
-            zSeries.removeFirst();
-        }
-        xSeries.addLast(null, event.values[0]);
-        ySeries.addLast(null, event.values[1]);
-        zSeries.addLast(null, event.values[2]);
-
-        orientPlot.redraw();
-    }
-
-    @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {
-
-    }
 
     @Override
     protected void onResume() {
         super.onResume();
-        mSensorManager.registerListener(this, mOrientation, SensorManager.SENSOR_DELAY_FASTEST);
+        mSensorManager.registerListener(this, mOrientation, SensorManager.SENSOR_DELAY_GAME);
+        mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_GAME);
     }
 
     @Override
@@ -100,35 +62,138 @@ public class MainActivity extends Activity implements SensorEventListener {
         mSensorManager.unregisterListener(this);
     }
 
-    public void initOrientPlot() {
-        orientPlot = (XYPlot) findViewById(R.id.orientPlot);
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
 
-        xSeries = new SimpleXYSeries("X (Pitch)");
-        xSeries.useImplicitXVals();
-        ySeries = new SimpleXYSeries("Y (Azimuth)");
-        ySeries.useImplicitXVals();
-        zSeries = new SimpleXYSeries("Z (Roll)");
-        zSeries.useImplicitXVals();
+        mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        mOrientation = mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION);
+        mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 
-        orientPlot.setBackgroundColor(Color.BLACK);
-        orientPlot.getBackgroundPaint().setColor(Color.BLACK);
-        orientPlot.getGraphWidget().getBackgroundPaint().setColor(Color.BLACK);
-        orientPlot.getGraphWidget().getGridBackgroundPaint().setColor(Color.BLACK);
+        client = getGoogleApiClient(this);
+        retrieveDeviceNode();
 
-        orientPlot.setRangeBoundaries(-180, 360, BoundaryMode.FIXED);
-        orientPlot.setDomainBoundaries(0, HISTORY_SIZE, BoundaryMode.FIXED);
-        orientPlot.setDomainStep(XYStepMode.INCREMENT_BY_VAL, 50);
-        orientPlot.getLegendWidget().setSize(new SizeMetrics(50, SizeLayoutType.ABSOLUTE, 750, SizeLayoutType.ABSOLUTE));
-        //accelPlot.setDomainStepValue(HISTORY_SIZE / 3);
-        //accelPlot.setTicksPerDomainLabel(10);
-        //accelPlot.setTicksPerRangeLabel(1);
-        orientPlot.setDomainValueFormat(new DecimalFormat("#"));
-        orientPlot.setDomainLabel(null);
-        orientPlot.setRangeLabel(null);
-        orientPlot.setRangeValueFormat(new DecimalFormat("#"));
+        final WatchViewStub stub = (WatchViewStub) findViewById(R.id.watch_view_stub);
+        stub.setOnLayoutInflatedListener(new WatchViewStub.OnLayoutInflatedListener() {
+            @Override
+            public void onLayoutInflated(WatchViewStub stub) {
+                mXAccelView = (TextView) stub.findViewById(R.id.xAccelView);
+                mYAccelView = (TextView) stub.findViewById(R.id.yAccelView);
+                mZAccelView = (TextView) stub.findViewById(R.id.zAccelView);
+                mXOrientView = (TextView) stub.findViewById(R.id.xOrientView);
+                mYOrientView = (TextView) stub.findViewById(R.id.yOrientView);
+                mZOrientView = (TextView) stub.findViewById(R.id.zOrientView);
 
-        orientPlot.addSeries(xSeries, new LineAndPointFormatter(Color.rgb(100, 100, 200), null, null, null));
-        orientPlot.addSeries(ySeries, new LineAndPointFormatter(Color.rgb(100, 200, 100), null, null, null));
-        orientPlot.addSeries(zSeries, new LineAndPointFormatter(Color.rgb(200, 100, 200), null, null, null));
+                mBtnStartLogging = (Button) stub.findViewById(R.id.btnStartLogging);
+                mBtnStartLogging.setOnClickListener(new View.OnClickListener() {
+                    public void onClick(View view) {
+                        started = true;
+                    }
+                });
+                mBtnStopLogging = (Button) stub.findViewById(R.id.btnStopLogging);
+                mBtnStopLogging.setOnClickListener(new View.OnClickListener() {
+                    public void onClick(View view) {
+                        started = false;
+                    }
+                });
+            }
+        });
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        client.connect();
+    }
+
+    @Override
+    protected void onStop() {
+        if (client != null && client.isConnected()) {
+            client.disconnect();
+        }
+        super.onStop();
+    }
+
+    private GoogleApiClient getGoogleApiClient(Context context) {
+        return new GoogleApiClient.Builder(context)
+                .addApi(Wearable.API)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .build();
+    }
+
+    private void retrieveDeviceNode() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                client.blockingConnect(CONNECTION_TIME_OUT_MS, TimeUnit.MILLISECONDS);
+                NodeApi.GetConnectedNodesResult result =
+                        Wearable.NodeApi.getConnectedNodes(client).await();
+                List<Node> nodes = result.getNodes();
+                if (nodes.size() > 0) {
+                    nodeId = nodes.get(0).getId();
+                    System.out.println(nodeId);
+                }
+                //client.disconnect();
+            }
+        }).start();
+    }
+
+    @Override
+    public void onSensorChanged(final SensorEvent event) {
+        final int sensorType = event.sensor.getType();
+
+        if (started) {
+            xValue = String.valueOf(event.values[0]);
+            yValue = String.valueOf(event.values[1]);
+            zValue = String.valueOf(event.values[2]);
+
+            String values = xValue + ";" + yValue + ";" + zValue;
+
+            if (nodeId != null) {
+                if (sensorType == Sensor.TYPE_ACCELEROMETER) {
+                    Wearable.MessageApi.sendMessage(client, nodeId, MESSAGE_PATH_ACCEL, values.getBytes());
+                } else if (sensorType == Sensor.TYPE_ORIENTATION) {
+                    Wearable.MessageApi.sendMessage(client, nodeId, MESSAGE_PATH_ORIENT, values.getBytes());
+                }
+
+            }
+
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (sensorType == Sensor.TYPE_ACCELEROMETER) {
+                        mXAccelView.setText("x = " + xValue);
+                        mYAccelView.setText("y = " + yValue);
+                        mZAccelView.setText("z = " + zValue);
+                    } else if (sensorType == Sensor.TYPE_ORIENTATION) {
+                        mXOrientView.setText("x = " + xValue);
+                        mYOrientView.setText("y = " + yValue);
+                        mZOrientView.setText("z = " + zValue);
+                    }
+                }
+            });
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+    }
+
+    @Override
+    public void onConnected(Bundle bundle) {
+
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+
+    }
+
+    @Override
+    public void onConnectionFailed(ConnectionResult connectionResult) {
+
     }
 }

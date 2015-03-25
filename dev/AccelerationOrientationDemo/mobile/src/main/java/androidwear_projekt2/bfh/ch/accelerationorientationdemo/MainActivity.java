@@ -1,17 +1,15 @@
 package androidwear_projekt2.bfh.ch.accelerationorientationdemo;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Color;
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
-import android.hardware.SensorManager;
 import android.os.Bundle;
+import android.support.v4.content.LocalBroadcastManager;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.widget.Button;
 import android.widget.TextView;
 
 import com.androidplot.ui.SizeLayoutType;
@@ -25,54 +23,45 @@ import com.androidplot.xy.XYStepMode;
 import java.text.DecimalFormat;
 
 
-public class MainActivity extends Activity implements SensorEventListener {
+public class MainActivity extends Activity {
 
     private static final int HISTORY_SIZE = 400;
 
-    private SensorManager mSensorManager = null;
-    private Sensor mOrientation = null;
+    private XYPlot mOrientPlot = null;
+    private XYPlot mAccelPlot = null;
 
-    private XYPlot orientPlot = null;
+    private SimpleXYSeries mXOrientSeries = null;
+    private SimpleXYSeries mYOrientSeries = null;
+    private SimpleXYSeries mZOrientSeries = null;
+    private SimpleXYSeries mXAccelSeries = null;
+    private SimpleXYSeries mYAccelSeries = null;
+    private SimpleXYSeries mZAccelSeries = null;
 
-    private SimpleXYSeries xSeries = null;
-    private SimpleXYSeries ySeries = null;
-    private SimpleXYSeries zSeries = null;
-
-    private TextView xView = null;
-    private TextView yView = null;
-    private TextView zView = null;
-
-    private Button btnStart = null;
-    private Button btnStop = null;
-
-    private boolean started = false;
+    private TextView mXOrientView = null;
+    private TextView mYOrientView = null;
+    private TextView mZOrientView = null;
+    private TextView mXAccelView = null;
+    private TextView mYAccelView = null;
+    private TextView mZAccelView = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        mOrientation = mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION);
+        IntentFilter intentFilter = new IntentFilter(Intent.ACTION_SEND);
+        MessageReceiver messageReceiver = new MessageReceiver();
+        LocalBroadcastManager.getInstance(this).registerReceiver(messageReceiver, intentFilter);
 
-        xView = (TextView) findViewById(R.id.xView);
-        yView = (TextView) findViewById(R.id.yView);
-        zView = (TextView) findViewById(R.id.zView);
-
-        btnStart = (Button) findViewById(R.id.btnStart);
-        btnStart.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View view) {
-                started = true;
-            }
-        });
-        btnStop = (Button) findViewById(R.id.btnStop);
-        btnStop.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View view) {
-                started = false;
-            }
-        });
+        mXOrientView = (TextView) findViewById(R.id.xOrientView);
+        mYOrientView = (TextView) findViewById(R.id.yOrientView);
+        mZOrientView = (TextView) findViewById(R.id.zOrientView);
+        mXAccelView = (TextView) findViewById(R.id.xAccelView);
+        mYAccelView = (TextView) findViewById(R.id.yAccelView);
+        mZAccelView = (TextView) findViewById(R.id.zAccelView);
 
         initOrientPlot();
+        initAccelPlot();
     }
 
 
@@ -98,72 +87,111 @@ public class MainActivity extends Activity implements SensorEventListener {
         return super.onOptionsItemSelected(item);
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        mSensorManager.registerListener(this, mOrientation, SensorManager.SENSOR_DELAY_FASTEST);
-    }
 
-    @Override
-    protected void onPause() {
-        super.onPause();
-        mSensorManager.unregisterListener(this);
-    }
-
-    @Override
-    public void onSensorChanged(SensorEvent event) {
-        if (started) {
-            if (xSeries.size() > HISTORY_SIZE) {
-                xSeries.removeFirst();
-                ySeries.removeFirst();
-                zSeries.removeFirst();
-            }
-            xSeries.addLast(null, event.values[0]);
-            ySeries.addLast(null, event.values[1]);
-            zSeries.addLast(null, event.values[2]);
-
-            orientPlot.redraw();
-
-            xView.setText("x = " + event.values[0]);
-            yView.setText("y = " + event.values[1]);
-            zView.setText("z = " + event.values[2]);
-        }
-    }
-
-    @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {
-
-    }
 
     public void initOrientPlot() {
-        orientPlot = (XYPlot) findViewById(R.id.orientPlot);
+        mOrientPlot = (XYPlot) findViewById(R.id.orientPlot);
 
-        xSeries = new SimpleXYSeries("X (Pitch)");
-        xSeries.useImplicitXVals();
-        ySeries = new SimpleXYSeries("Y (Azimuth)");
-        ySeries.useImplicitXVals();
-        zSeries = new SimpleXYSeries("Z (Roll)");
-        zSeries.useImplicitXVals();
+        mXOrientSeries = new SimpleXYSeries("X (Pitch)");
+        mXOrientSeries.useImplicitXVals();
+        mYOrientSeries = new SimpleXYSeries("Y (Roll)");
+        mYOrientSeries.useImplicitXVals();
+        mZOrientSeries = new SimpleXYSeries("Z (Azimuth)");
+        mZOrientSeries.useImplicitXVals();
 
-        orientPlot.setBackgroundColor(Color.BLACK);
-        orientPlot.getBackgroundPaint().setColor(Color.BLACK);
-        orientPlot.getGraphWidget().getBackgroundPaint().setColor(Color.BLACK);
-        orientPlot.getGraphWidget().getGridBackgroundPaint().setColor(Color.BLACK);
+        mOrientPlot.setBackgroundColor(Color.BLACK);
+        mOrientPlot.getBackgroundPaint().setColor(Color.BLACK);
+        mOrientPlot.getGraphWidget().getBackgroundPaint().setColor(Color.BLACK);
+        mOrientPlot.getGraphWidget().getGridBackgroundPaint().setColor(Color.BLACK);
 
-        orientPlot.setRangeBoundaries(-180, 359, BoundaryMode.FIXED);
-        orientPlot.setDomainBoundaries(0, HISTORY_SIZE, BoundaryMode.FIXED);
-        orientPlot.setDomainStep(XYStepMode.INCREMENT_BY_VAL, 50);
-        orientPlot.getLegendWidget().setSize(new SizeMetrics(50, SizeLayoutType.ABSOLUTE, 750, SizeLayoutType.ABSOLUTE));
-        //accelPlot.setDomainStepValue(HISTORY_SIZE / 3);
-        //accelPlot.setTicksPerDomainLabel(10);
-        //accelPlot.setTicksPerRangeLabel(1);
-        orientPlot.setDomainValueFormat(new DecimalFormat("#"));
-        orientPlot.setDomainLabel(null);
-        orientPlot.setRangeLabel(null);
-        orientPlot.setRangeValueFormat(new DecimalFormat("#"));
+        mOrientPlot.setRangeBoundaries(-180, 359, BoundaryMode.FIXED);
+        mOrientPlot.setDomainBoundaries(0, HISTORY_SIZE, BoundaryMode.FIXED);
+        mOrientPlot.setDomainStep(XYStepMode.INCREMENT_BY_VAL, 50);
+        mOrientPlot.getLegendWidget().setSize(new SizeMetrics(50, SizeLayoutType.ABSOLUTE, 750, SizeLayoutType.ABSOLUTE));
+        mOrientPlot.setDomainValueFormat(new DecimalFormat("#"));
+        mOrientPlot.setDomainLabel(null);
+        mOrientPlot.setRangeLabel(null);
+        mOrientPlot.setRangeValueFormat(new DecimalFormat("#"));
 
-        orientPlot.addSeries(xSeries, new LineAndPointFormatter(Color.rgb(100, 100, 200), null, null, null));
-        orientPlot.addSeries(ySeries, new LineAndPointFormatter(Color.rgb(100, 200, 100), null, null, null));
-        orientPlot.addSeries(zSeries, new LineAndPointFormatter(Color.rgb(200, 100, 200), null, null, null));
+        mOrientPlot.addSeries(mXOrientSeries, new LineAndPointFormatter(Color.rgb(100, 100, 200), null, null, null));
+        mOrientPlot.addSeries(mYOrientSeries, new LineAndPointFormatter(Color.rgb(100, 200, 100), null, null, null));
+        mOrientPlot.addSeries(mZOrientSeries, new LineAndPointFormatter(Color.rgb(200, 100, 200), null, null, null));
+    }
+
+    public void initAccelPlot() {
+        mAccelPlot = (XYPlot) findViewById(R.id.accelPlot);
+
+        mXAccelSeries = new SimpleXYSeries("X (Pitch)");
+        mXAccelSeries.useImplicitXVals();
+        mYAccelSeries = new SimpleXYSeries("Y (Roll)");
+        mYAccelSeries.useImplicitXVals();
+        mZAccelSeries = new SimpleXYSeries("Z (Azimuth)");
+        mZAccelSeries.useImplicitXVals();
+
+        mAccelPlot.setBackgroundColor(Color.BLACK);
+        mAccelPlot.getBackgroundPaint().setColor(Color.BLACK);
+        mAccelPlot.getGraphWidget().getBackgroundPaint().setColor(Color.BLACK);
+        mAccelPlot.getGraphWidget().getGridBackgroundPaint().setColor(Color.BLACK);
+
+        mAccelPlot.setDomainBoundaries(0, HISTORY_SIZE, BoundaryMode.FIXED);
+        mAccelPlot.setDomainStep(XYStepMode.INCREMENT_BY_VAL, 50);
+        mAccelPlot.getLegendWidget().setSize(new SizeMetrics(50, SizeLayoutType.ABSOLUTE, 750, SizeLayoutType.ABSOLUTE));
+        mAccelPlot.setDomainValueFormat(new DecimalFormat("#"));
+        mAccelPlot.setDomainLabel(null);
+        mAccelPlot.setRangeLabel(null);
+        mAccelPlot.setRangeValueFormat(new DecimalFormat("#"));
+
+        mAccelPlot.addSeries(mXAccelSeries, new LineAndPointFormatter(Color.rgb(100, 100, 200), null, null, null));
+        mAccelPlot.addSeries(mYAccelSeries, new LineAndPointFormatter(Color.rgb(100, 200, 100), null, null, null));
+        mAccelPlot.addSeries(mZAccelSeries, new LineAndPointFormatter(Color.rgb(200, 100, 200), null, null, null));
+    }
+
+    public class MessageReceiver extends BroadcastReceiver {
+
+        private final static String MESSAGE_PATH_ORIENT = "orientValues";
+        private final static String MESSAGE_PATH_ACCEL = "accelValues";
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            System.out.println("MsgReceiver: onReceive");
+
+            String messagePath = intent.getStringExtra("messagePath");
+
+            if (intent.getStringExtra("messagePath").equals(MESSAGE_PATH_ORIENT)) {
+                String values = intent.getStringExtra("values");
+                String[] parts = values.split(";");
+                mXOrientView.setText("x = " + parts[0]);
+                mYOrientView.setText("y = " + parts[1]);
+                mZOrientView.setText("z = " + parts[2]);
+
+                if (mXOrientSeries.size() > HISTORY_SIZE) {
+                    mXOrientSeries.removeFirst();
+                    mYOrientSeries.removeFirst();
+                    mZOrientSeries.removeFirst();
+                }
+                mXOrientSeries.addLast(null, Float.parseFloat(parts[0]));
+                mYOrientSeries.addLast(null, Float.parseFloat(parts[1]));
+                mZOrientSeries.addLast(null, Float.parseFloat(parts[2]));
+
+                mOrientPlot.redraw();
+            } else if (intent.getStringExtra("messagePath").equals(MESSAGE_PATH_ACCEL)) {
+                String values = intent.getStringExtra("values");
+                String[] parts = values.split(";");
+                mXAccelView.setText("x = " + parts[0]);
+                mYAccelView.setText("y = " + parts[1]);
+                mZAccelView.setText("z = " + parts[2]);
+
+                if (mXAccelSeries.size() > HISTORY_SIZE) {
+                    mXAccelSeries.removeFirst();
+                    mYAccelSeries.removeFirst();
+                    mZAccelSeries.removeFirst();
+                }
+                mXAccelSeries.addLast(null, Float.parseFloat(parts[0]));
+                mYAccelSeries.addLast(null, Float.parseFloat(parts[1]));
+                mZAccelSeries.addLast(null, Float.parseFloat(parts[2]));
+
+                mAccelPlot.redraw();
+            }
+        }
     }
 }
