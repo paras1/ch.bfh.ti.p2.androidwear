@@ -1,13 +1,13 @@
-# LaTeX
+reated by https://www.gitignore.io
+
+### LaTeX ###
 *.acn
 *.acr
 *.alg
 *.aux
-*.bak
 *.bbl
+*.bcf
 *.blg
-*.bmt
-*.brf
 *.dvi
 *.fdb_latexmk
 *.glg
@@ -17,12 +17,10 @@
 *.ilg
 *.ind
 *.ist
-*.lbl
 *.lof
 *.log
 *.lot
 *.maf
-*.mpx
 *.mtc
 *.mtc0
 *.nav
@@ -30,24 +28,11 @@
 *.out
 *.pdfsync
 *.ps
+*.run.xml
 *.snm
 *.synctex.gz
 *.toc
-*.tps
 *.vrb
 *.xdy
 *.tdo
 
-# TeXnicCenter
-*.glg
-*.glo
-*.gls
-*.ist
-!mkidx.ist
-
-# Compiled
-*.pdf
-*.ps
-
-# Windows
-Thumbs.db*
