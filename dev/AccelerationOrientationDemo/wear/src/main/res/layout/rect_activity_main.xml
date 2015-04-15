@@ -1,73 +1,78 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
-    android:layout_height="match_parent" android:orientation="vertical"
-    tools:context=".MainActivity" tools:deviceIds="wear_square">
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    >
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
+        android:layout_height="match_parent" android:orientation="vertical"
+        tools:context=".MainActivity" tools:deviceIds="wear_square">
 
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
 
-            <TextView
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:text="Orientation"
-                android:textStyle="bold" />
-            <TextView
-                android:id="@+id/xOrientView"
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:text="x = 0"/>
-            <TextView
-                android:id="@+id/yOrientView"
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:text="y = 0"/>
-            <TextView
-                android:id="@+id/zOrientView"
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:text="z = 0"/>
+                <TextView
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Orientation"
+                    android:textStyle="bold" />
+                <TextView
+                    android:id="@+id/xOrientView"
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:text="x = 0"/>
+                <TextView
+                    android:id="@+id/yOrientView"
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:text="y = 0"/>
+                <TextView
+                    android:id="@+id/zOrientView"
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:text="z = 0"/>
 
-            <TextView
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:text="Accelerometer"
-                android:textStyle="bold" />
-            <TextView
-                android:id="@+id/xAccelView"
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:text="x = 0"/>
-            <TextView
-                android:id="@+id/yAccelView"
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:text="y = 0"/>
-            <TextView
-                android:id="@+id/zAccelView"
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:text="z = 0"/>
+                <TextView
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Accelerometer"
+                    android:textStyle="bold" />
+                <TextView
+                    android:id="@+id/xAccelView"
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:text="x = 0"/>
+                <TextView
+                    android:id="@+id/yAccelView"
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:text="y = 0"/>
+                <TextView
+                    android:id="@+id/zAccelView"
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:text="z = 0"/>
 
-        </LinearLayout>
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-
-            <Button
-                android:id="@+id/btnStartLogging"
-                android:layout_width="fill_parent"
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Start" />
+                android:orientation="horizontal">
 
-            <Button
-                android:id="@+id/btnStopLogging"
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:text="Stop" />
+                <Button
+                    android:id="@+id/btnStartLogging"
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Start" />
 
-        </LinearLayout>
-</LinearLayout>
+                <Button
+                    android:id="@+id/btnStopLogging"
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Stop" />
+
+            </LinearLayout>
+    </LinearLayout>
+</ScrollView>
