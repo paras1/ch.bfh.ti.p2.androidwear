@@ -24,4 +24,5 @@ dependencies {
     wearApp project(':wear')
     compile 'com.google.android.gms:play-services:+'
     compile "com.androidplot:androidplot-core:0.6.1"
+    compile 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.0.2'
 }
