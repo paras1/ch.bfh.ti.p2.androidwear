@@ -11,17 +11,18 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
 import com.androidplot.ui.SizeLayoutType;
 import com.androidplot.ui.SizeMetrics;
 import com.androidplot.xy.*;
-
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
 import java.text.DecimalFormat;
 
@@ -49,10 +50,6 @@ public class MainActivity extends Activity implements SensorEventListener {
 
     private NetworkListener networkListener;
 
-    public MainActivity() {
-        networkListener = new NetworkListener(this);
-    }
-
     private SensorManager mSensorManager = null;
     private Sensor mOrientation = null;
     private Sensor mAccelerometer = null;
@@ -67,6 +64,18 @@ public class MainActivity extends Activity implements SensorEventListener {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        try {
+            MemoryPersistence persistence = new MemoryPersistence();
+            mqttClient = new MqttClient("tcp://smoje.ch:1883", "ch.bfh.mqtt.android", persistence);
+            MqttConnectOptions options = new MqttConnectOptions();
+            options.setCleanSession(false);
+            mqttClient.connect(options);
+        } catch (MqttException e) {
+            Log.e("main", e.getMessage(), e);
+        }
+        networkListener = new NetworkListener(this);
+        networkListener.start("1");
 
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         mOrientation = mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION);
@@ -83,17 +92,6 @@ public class MainActivity extends Activity implements SensorEventListener {
 
         initOrientPlot();
         initAccelPlot();
-
-
-        try {
-            mqttClient = new MqttClient("tcp://smoje.ch:1883", "ch.bfh.mqtt.android");
-            MqttConnectOptions options = new MqttConnectOptions();
-            options.setCleanSession(false);
-            mqttClient.connect(options);
-        } catch (MqttException e) {
-            e.printStackTrace();
-        }
-
     }
 
 
@@ -114,21 +112,21 @@ public class MainActivity extends Activity implements SensorEventListener {
     public void onSensorChanged(final SensorEvent event) {
         final int sensorType = event.sensor.getType();
 
-            xValue = String.valueOf(event.values[0]);
-            yValue = String.valueOf(event.values[1]);
-            zValue = String.valueOf(event.values[2]);
+        xValue = String.valueOf(event.values[0]);
+        yValue = String.valueOf(event.values[1]);
+        zValue = String.valueOf(event.values[2]);
 
-            String values = xValue + ";" + yValue + ";" + zValue;
-            try {
+        String values = xValue + ";" + yValue + ";" + zValue;
+        try {
             MqttMessage message = new MqttMessage(values.getBytes());
-                if (sensorType == Sensor.TYPE_ACCELEROMETER) {
-                    mqttClient.publish("ch/bfh/mqtt/android/1/accelerometer", message);
-                } else if (sensorType == Sensor.TYPE_ORIENTATION) {
-                    mqttClient.publish("ch/bfh/mqtt/android/1/orientation", message);
-                }
-            }  catch (MqttException e) {
-                e.printStackTrace();
+            if (sensorType == Sensor.TYPE_ACCELEROMETER) {
+                mqttClient.publish("ch/bfh/mqtt/android/1/accelerometer", message);
+            } else if (sensorType == Sensor.TYPE_ORIENTATION) {
+                mqttClient.publish("ch/bfh/mqtt/android/1/orientation", message);
             }
+        } catch (MqttException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

@@ -1,6 +1,7 @@
 package androidwear_projekt2.bfh.ch.accelerationorientationdemo;
 
 import org.eclipse.paho.client.mqttv3.*;
+import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
 /**
  * Created by Christian Basler on 01.05.15.
@@ -12,7 +13,8 @@ public class NetworkListener {
     public NetworkListener(MainActivity ctx) {
         this.ctx = ctx;
         try {
-            mqttClient = new MqttClient("tcp://smoje.ch:1883", "AccelerationOrientationDemo");
+            MemoryPersistence persistence = new MemoryPersistence();
+            mqttClient = new MqttClient("tcp://smoje.ch:1883", "ch.bfh.mqtt.android", persistence);
         } catch (MqttException e) {
             e.printStackTrace();
         }
@@ -33,13 +35,12 @@ public class NetworkListener {
                 @Override
                 public void messageArrived(final String topic, final MqttMessage mm) throws Exception {
                     final String value = new String(mm.getPayload());
-                    //Remember: GSON (Json) would be good
                     ctx.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            if (topic.contains("acc"))
+                            if (topic.endsWith("accelerometer"))
                                 ctx.updateAcceleration(value);
-                            if (topic.contains("orient"))
+                            if (topic.contains("orientation"))
                                 ctx.updateOrientation(value);
                         }
                     });
@@ -51,7 +52,7 @@ public class NetworkListener {
             });
 
             mqttClient.connect(options);
-            mqttClient.subscribe("ch/bfh/fbi/" + user + "/sensors/+/+");
+            mqttClient.subscribe("ch/bfh/mqtt/android/" + user + "/+");
         } catch (MqttException e) {
             e.printStackTrace();
         }
