@@ -6,8 +6,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Color;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.os.Bundle;
-import android.support.v4.content.LocalBroadcastManager;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
@@ -15,10 +18,15 @@ import com.androidplot.ui.SizeLayoutType;
 import com.androidplot.ui.SizeMetrics;
 import com.androidplot.xy.*;
 
+import org.eclipse.paho.client.mqttv3.MqttClient;
+import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
+import org.eclipse.paho.client.mqttv3.MqttException;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
+
 import java.text.DecimalFormat;
 
 
-public class MainActivity extends Activity {
+public class MainActivity extends Activity implements SensorEventListener {
 
     private static final int HISTORY_SIZE = 400;
 
@@ -45,14 +53,26 @@ public class MainActivity extends Activity {
         networkListener = new NetworkListener(this);
     }
 
+    private SensorManager mSensorManager = null;
+    private Sensor mOrientation = null;
+    private Sensor mAccelerometer = null;
+
+    private String xValue = "";
+    private String yValue = "";
+    private String zValue = "";
+
+    private MqttClient mqttClient;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        mOrientation = mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION);
+        mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+
         IntentFilter intentFilter = new IntentFilter(Intent.ACTION_SEND);
-        MessageReceiver messageReceiver = new MessageReceiver();
-        LocalBroadcastManager.getInstance(this).registerReceiver(messageReceiver, intentFilter);
 
         mXOrientView = (TextView) findViewById(R.id.xOrientView);
         mYOrientView = (TextView) findViewById(R.id.yOrientView);
@@ -63,8 +83,53 @@ public class MainActivity extends Activity {
 
         initOrientPlot();
         initAccelPlot();
+
+
+        try {
+            mqttClient = new MqttClient("tcp://smoje.ch:1883", "ch.bfh.mqtt.android");
+            MqttConnectOptions options = new MqttConnectOptions();
+            options.setCleanSession(false);
+            mqttClient.connect(options);
+        } catch (MqttException e) {
+            e.printStackTrace();
+        }
+
     }
 
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        mSensorManager.registerListener(this, mOrientation, SensorManager.SENSOR_DELAY_GAME);
+        mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_GAME);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        mSensorManager.unregisterListener(this);
+    }
+
+    @Override
+    public void onSensorChanged(final SensorEvent event) {
+        final int sensorType = event.sensor.getType();
+
+            xValue = String.valueOf(event.values[0]);
+            yValue = String.valueOf(event.values[1]);
+            zValue = String.valueOf(event.values[2]);
+
+            String values = xValue + ";" + yValue + ";" + zValue;
+            try {
+            MqttMessage message = new MqttMessage(values.getBytes());
+                if (sensorType == Sensor.TYPE_ACCELEROMETER) {
+                    mqttClient.publish("ch/bfh/mqtt/android/1/accelerometer", message);
+                } else if (sensorType == Sensor.TYPE_ORIENTATION) {
+                    mqttClient.publish("ch/bfh/mqtt/android/1/orientation", message);
+                }
+            }  catch (MqttException e) {
+                e.printStackTrace();
+            }
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
