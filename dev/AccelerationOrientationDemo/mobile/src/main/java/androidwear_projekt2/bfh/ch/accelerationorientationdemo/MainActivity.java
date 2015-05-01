@@ -11,14 +11,9 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
-
 import com.androidplot.ui.SizeLayoutType;
 import com.androidplot.ui.SizeMetrics;
-import com.androidplot.xy.BoundaryMode;
-import com.androidplot.xy.LineAndPointFormatter;
-import com.androidplot.xy.SimpleXYSeries;
-import com.androidplot.xy.XYPlot;
-import com.androidplot.xy.XYStepMode;
+import com.androidplot.xy.*;
 
 import java.text.DecimalFormat;
 
@@ -43,6 +38,12 @@ public class MainActivity extends Activity {
     private TextView mXAccelView = null;
     private TextView mYAccelView = null;
     private TextView mZAccelView = null;
+
+    private NetworkListener networkListener;
+
+    public MainActivity() {
+        networkListener = new NetworkListener(this);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -86,7 +87,6 @@ public class MainActivity extends Activity {
 
         return super.onOptionsItemSelected(item);
     }
-
 
 
     public void initOrientPlot() {
@@ -146,6 +146,43 @@ public class MainActivity extends Activity {
         mAccelPlot.addSeries(mZAccelSeries, new LineAndPointFormatter(Color.rgb(200, 100, 200), null, null, null));
     }
 
+    public void updateOrientation(String values) {
+        String[] parts = values.split(";");
+
+        mXOrientView.setText("x = " + parts[0]);
+        mYOrientView.setText("y = " + parts[1]);
+        mZOrientView.setText("z = " + parts[2]);
+
+        if (mXOrientSeries.size() > HISTORY_SIZE) {
+            mXOrientSeries.removeFirst();
+            mYOrientSeries.removeFirst();
+            mZOrientSeries.removeFirst();
+        }
+        mXOrientSeries.addLast(null, Float.parseFloat(parts[0]));
+        mYOrientSeries.addLast(null, Float.parseFloat(parts[1]));
+        mZOrientSeries.addLast(null, Float.parseFloat(parts[2]));
+
+        mOrientPlot.redraw();
+    }
+
+    public void updateAcceleration(String values) {
+        String[] parts = values.split(";");
+        mXAccelView.setText("x = " + parts[0]);
+        mYAccelView.setText("y = " + parts[1]);
+        mZAccelView.setText("z = " + parts[2]);
+
+        if (mXAccelSeries.size() > HISTORY_SIZE) {
+            mXAccelSeries.removeFirst();
+            mYAccelSeries.removeFirst();
+            mZAccelSeries.removeFirst();
+        }
+        mXAccelSeries.addLast(null, Float.parseFloat(parts[0]));
+        mYAccelSeries.addLast(null, Float.parseFloat(parts[1]));
+        mZAccelSeries.addLast(null, Float.parseFloat(parts[2]));
+
+        mAccelPlot.redraw();
+    }
+
     public class MessageReceiver extends BroadcastReceiver {
 
         private final static String MESSAGE_PATH_ORIENT = "orientValues";
@@ -157,40 +194,10 @@ public class MainActivity extends Activity {
 
             String messagePath = intent.getStringExtra("messagePath");
 
-            if (intent.getStringExtra("messagePath").equals(MESSAGE_PATH_ORIENT)) {
-                String values = intent.getStringExtra("values");
-                String[] parts = values.split(";");
-                mXOrientView.setText("x = " + parts[0]);
-                mYOrientView.setText("y = " + parts[1]);
-                mZOrientView.setText("z = " + parts[2]);
-
-                if (mXOrientSeries.size() > HISTORY_SIZE) {
-                    mXOrientSeries.removeFirst();
-                    mYOrientSeries.removeFirst();
-                    mZOrientSeries.removeFirst();
-                }
-                mXOrientSeries.addLast(null, Float.parseFloat(parts[0]));
-                mYOrientSeries.addLast(null, Float.parseFloat(parts[1]));
-                mZOrientSeries.addLast(null, Float.parseFloat(parts[2]));
-
-                mOrientPlot.redraw();
-            } else if (intent.getStringExtra("messagePath").equals(MESSAGE_PATH_ACCEL)) {
-                String values = intent.getStringExtra("values");
-                String[] parts = values.split(";");
-                mXAccelView.setText("x = " + parts[0]);
-                mYAccelView.setText("y = " + parts[1]);
-                mZAccelView.setText("z = " + parts[2]);
-
-                if (mXAccelSeries.size() > HISTORY_SIZE) {
-                    mXAccelSeries.removeFirst();
-                    mYAccelSeries.removeFirst();
-                    mZAccelSeries.removeFirst();
-                }
-                mXAccelSeries.addLast(null, Float.parseFloat(parts[0]));
-                mYAccelSeries.addLast(null, Float.parseFloat(parts[1]));
-                mZAccelSeries.addLast(null, Float.parseFloat(parts[2]));
-
-                mAccelPlot.redraw();
+            if (messagePath.equals(MESSAGE_PATH_ORIENT)) {
+                updateOrientation(intent.getStringExtra("values"));
+            } else if (messagePath.equals(MESSAGE_PATH_ACCEL)) {
+                updateAcceleration(intent.getStringExtra("values"));
             }
         }
     }
