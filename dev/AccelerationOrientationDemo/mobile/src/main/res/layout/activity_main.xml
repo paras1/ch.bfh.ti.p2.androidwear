@@ -15,20 +15,25 @@
             android:orientation="horizontal">
 
             <EditText
-                android:id="@+id/ownId"
+                android:id="@+id/clientId"
                 android:layout_weight="1"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:maxLines="1"
-                android:hint="Own id"/>
+                android:text="user"
+                android:hint="sender client id"/>
 
-            <EditText
-                android:id="@+id/otherId"
-                android:layout_weight="1"
-                android:layout_width="0dp"
+            <Switch
+                android:id="@+id/switchSend"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:maxLines="1"
-                android:hint="Other id"/>
+                android:text="send"/>
+
+            <Switch
+                android:id="@+id/switchReceive"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="receive"/>
 
         </LinearLayout>
 

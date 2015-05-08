@@ -11,20 +11,25 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.CompoundButton;
+import android.widget.Switch;
 import android.widget.TextView;
+
 import com.androidplot.ui.SizeLayoutType;
 import com.androidplot.ui.SizeMetrics;
-import com.androidplot.xy.*;
+import com.androidplot.xy.BoundaryMode;
+import com.androidplot.xy.LineAndPointFormatter;
+import com.androidplot.xy.SimpleXYSeries;
+import com.androidplot.xy.XYPlot;
+import com.androidplot.xy.XYStepMode;
+
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintWriter;
 import java.text.DecimalFormat;
-import java.util.Date;
 
 
 public class MainActivity extends Activity implements SensorEventListener {
@@ -41,12 +46,16 @@ public class MainActivity extends Activity implements SensorEventListener {
     private SimpleXYSeries mYAccelSeries = null;
     private SimpleXYSeries mZAccelSeries = null;
 
+    private TextView mClientId = null;
     private TextView mXOrientView = null;
     private TextView mYOrientView = null;
     private TextView mZOrientView = null;
     private TextView mXAccelView = null;
     private TextView mYAccelView = null;
     private TextView mZAccelView = null;
+
+    private Switch mSwitchSend = null;
+    private Switch mSwitchReceive = null;
 
     private NetworkListener networkListener;
 
@@ -67,19 +76,46 @@ public class MainActivity extends Activity implements SensorEventListener {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        try {
-            MemoryPersistence persistence = new MemoryPersistence();
-            mqttClient = new MqttClient("tcp://smoje.ch:1883", "ch.bfh.mqtt.android.accelerometer", persistence);
-            MqttConnectOptions options = new MqttConnectOptions();
-            options.setCleanSession(false);
-            mqttClient.connect(options);
-            System.out.println("WE ARE CONNECTED");
-            System.out.println("ClientId: " + mqttClient.getClientId());
-        } catch (MqttException e) {
-            Log.e("main", e.getMessage(), e);
-        }
+        mClientId = (TextView) findViewById(R.id.clientId);
+        mSwitchSend = (Switch) findViewById(R.id.switchSend);
+        mSwitchReceive = (Switch) findViewById(R.id.switchReceive);
+
+        mSwitchSend.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked) {
+                    try {
+                        MemoryPersistence persistence = new MemoryPersistence();
+                        mqttClient = new MqttClient("tcp://smoje.ch:1883", "ch.bfh.mqtt.android." + mClientId.getText() + ".accelerometer", persistence);
+                        MqttConnectOptions options = new MqttConnectOptions();
+                        options.setCleanSession(false);
+                        mqttClient.connect(options);
+                        System.out.println("WE ARE CONNECTED");
+                        System.out.println("ClientId: " + mqttClient.getClientId());
+                    } catch (MqttException e) {
+                        Log.e("main", e.getMessage(), e);
+                    }
+                } else {
+                    try {
+                        mqttClient.disconnect();
+                    } catch (MqttException e) {
+                        Log.e("main", e.getMessage(), e);
+                    }
+                }
+            }
+        });
+
         networkListener = new NetworkListener(this);
-        networkListener.start("1");
+        mSwitchReceive.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked) {
+                    networkListener.start(mClientId.getText().toString());
+                } else {
+                    networkListener.stop();
+                }
+            }
+        });
 
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         mOrientation = mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION);
@@ -100,8 +136,8 @@ public class MainActivity extends Activity implements SensorEventListener {
     @Override
     protected void onResume() {
         super.onResume();
-        mSensorManager.registerListener(this, mOrientation, 100000);
-        mSensorManager.registerListener(this, mAccelerometer, 100000);
+        mSensorManager.registerListener(this, mOrientation, 1000000);
+        mSensorManager.registerListener(this, mAccelerometer, 1000000);
     }
 
     @Override
@@ -119,21 +155,19 @@ public class MainActivity extends Activity implements SensorEventListener {
         zValue = String.valueOf(event.values[2]);
 
         String values = xValue + ";" + yValue + ";" + zValue;
-        try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            PrintWriter pw = new PrintWriter(baos);
-            pw.println("{message: " + values + "}");
-            pw.println("{time: " + new Date().toString() + "}");
-            pw.close();
-            MqttMessage message = new MqttMessage(baos.toByteArray());
-            if (sensorType == Sensor.TYPE_ACCELEROMETER) {
-                mqttClient.publish("ch.bfh.mqtt.android.accelerometer", message);
-            } /*else if (sensorType == Sensor.TYPE_ORIENTATION) {
+
+        if (mqttClient != null && mqttClient.isConnected()) {
+            try {
+                MqttMessage message = new MqttMessage(values.getBytes());
+                if (sensorType == Sensor.TYPE_ACCELEROMETER) {
+                    mqttClient.publish("ch.bfh.mqtt.android.accelerometer", message);
+                } /*else if (sensorType == Sensor.TYPE_ORIENTATION) {
                 mqttClient.publish("ch/bfh/mqtt/android/1/orientation", message);
             }*/
-            System.out.println(message.toString());
-        } catch (Exception e) {
-            Log.e("main", e.getMessage(), e);
+                System.out.println(message.toString());
+            } catch (Exception e) {
+                Log.e("main", e.getMessage(), e);
+            }
         }
     }
 
