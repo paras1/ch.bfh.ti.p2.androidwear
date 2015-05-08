@@ -73,7 +73,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 
         try {
             MemoryPersistence persistence = new MemoryPersistence();
-            mqttClient = new MqttClient("tcp://iot.eclipse.org:1883", "ch.bfh.mqtt.android", persistence);
+            mqttClient = new MqttClient("tcp://smoje.ch:1883", "ch.bfh.mqtt.android.accelerometer", persistence);
             MqttConnectOptions options = new MqttConnectOptions();
             options.setCleanSession(false);
             mqttClient.connect(options);
@@ -131,10 +131,10 @@ public class MainActivity extends Activity implements SensorEventListener {
             pw.close();
             MqttMessage message = new MqttMessage(baos.toByteArray());
             if (sensorType == Sensor.TYPE_ACCELEROMETER) {
-                mqttClient.publish("ch/bfh/mqtt/android/1/accelerometer", message);
-            } else if (sensorType == Sensor.TYPE_ORIENTATION) {
+                mqttClient.publish("ch.bfh.mqtt.android.accelerometer", message);
+            } /*else if (sensorType == Sensor.TYPE_ORIENTATION) {
                 mqttClient.publish("ch/bfh/mqtt/android/1/orientation", message);
-            }
+            }*/
             System.out.println(message.toString());
         } catch (Exception e) {
             Log.e("main", e.getMessage(), e);
