@@ -12,15 +12,9 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
-
 import com.androidplot.ui.SizeLayoutType;
 import com.androidplot.ui.SizeMetrics;
-import com.androidplot.xy.BoundaryMode;
-import com.androidplot.xy.LineAndPointFormatter;
-import com.androidplot.xy.SimpleXYSeries;
-import com.androidplot.xy.XYPlot;
-import com.androidplot.xy.XYStepMode;
-
+import com.androidplot.xy.*;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
@@ -66,6 +60,8 @@ public class MainActivity extends Activity implements SensorEventListener {
 
     private MqttClient mqttClient;
 
+    private long lastUpdate;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -78,7 +74,7 @@ public class MainActivity extends Activity implements SensorEventListener {
             options.setCleanSession(false);
             mqttClient.connect(options);
             System.out.println("WE ARE CONNECTED");
-            System.out.println("ClientId: "+mqttClient.getClientId());
+            System.out.println("ClientId: " + mqttClient.getClientId());
         } catch (MqttException e) {
             Log.e("main", e.getMessage(), e);
         }
@@ -104,8 +100,8 @@ public class MainActivity extends Activity implements SensorEventListener {
     @Override
     protected void onResume() {
         super.onResume();
-        mSensorManager.registerListener(this, mOrientation, SensorManager.SENSOR_DELAY_GAME);
-        mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_GAME);
+        mSensorManager.registerListener(this, mOrientation, 100000);
+        mSensorManager.registerListener(this, mAccelerometer, 100000);
     }
 
     @Override
