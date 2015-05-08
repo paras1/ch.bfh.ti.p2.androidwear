@@ -14,15 +14,9 @@ import android.view.MenuItem;
 import android.widget.CompoundButton;
 import android.widget.Switch;
 import android.widget.TextView;
-
 import com.androidplot.ui.SizeLayoutType;
 import com.androidplot.ui.SizeMetrics;
-import com.androidplot.xy.BoundaryMode;
-import com.androidplot.xy.LineAndPointFormatter;
-import com.androidplot.xy.SimpleXYSeries;
-import com.androidplot.xy.XYPlot;
-import com.androidplot.xy.XYStepMode;
-
+import com.androidplot.xy.*;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
@@ -86,7 +80,8 @@ public class MainActivity extends Activity implements SensorEventListener {
                 if (isChecked) {
                     try {
                         MemoryPersistence persistence = new MemoryPersistence();
-                        mqttClient = new MqttClient("tcp://smoje.ch:1883", "ch.bfh.mqtt.android." + mClientId.getText() + ".accelerometer", persistence);
+                        mqttClient = new MqttClient("tcp://smoje.ch:1883", "ch.bfh.mqtt.android." + mClientId.getText(), persistence);
+                        System.out.println(mClientId.getText());
                         MqttConnectOptions options = new MqttConnectOptions();
                         options.setCleanSession(false);
                         mqttClient.connect(options);
@@ -160,10 +155,10 @@ public class MainActivity extends Activity implements SensorEventListener {
             try {
                 MqttMessage message = new MqttMessage(values.getBytes());
                 if (sensorType == Sensor.TYPE_ACCELEROMETER) {
-                    mqttClient.publish("ch.bfh.mqtt.android.accelerometer", message);
-                } /*else if (sensorType == Sensor.TYPE_ORIENTATION) {
-                mqttClient.publish("ch/bfh/mqtt/android/1/orientation", message);
-            }*/
+                    mqttClient.publish("ch/bfh/mqtt/android/" + mClientId.getText() + "/accelerometer", message);
+                } else if (sensorType == Sensor.TYPE_ORIENTATION) {
+                    mqttClient.publish("ch/bfh/mqtt/android/" + mClientId.getText() + "/orientation", message);
+                }
                 System.out.println(message.toString());
             } catch (Exception e) {
                 Log.e("main", e.getMessage(), e);
