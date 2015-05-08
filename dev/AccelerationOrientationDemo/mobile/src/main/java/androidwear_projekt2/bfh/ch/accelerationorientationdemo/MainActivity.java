@@ -1,10 +1,7 @@
 package androidwear_projekt2.bfh.ch.accelerationorientationdemo;
 
 import android.app.Activity;
-import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.graphics.Color;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -15,16 +12,25 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
+
 import com.androidplot.ui.SizeLayoutType;
 import com.androidplot.ui.SizeMetrics;
-import com.androidplot.xy.*;
+import com.androidplot.xy.BoundaryMode;
+import com.androidplot.xy.LineAndPointFormatter;
+import com.androidplot.xy.SimpleXYSeries;
+import com.androidplot.xy.XYPlot;
+import com.androidplot.xy.XYStepMode;
+
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintWriter;
 import java.text.DecimalFormat;
+import java.util.Date;
 
 
 public class MainActivity extends Activity implements SensorEventListener {
@@ -67,10 +73,12 @@ public class MainActivity extends Activity implements SensorEventListener {
 
         try {
             MemoryPersistence persistence = new MemoryPersistence();
-            mqttClient = new MqttClient("tcp://smoje.ch:1883", "ch.bfh.mqtt.android", persistence);
+            mqttClient = new MqttClient("tcp://iot.eclipse.org:1883", "ch.bfh.mqtt.android", persistence);
             MqttConnectOptions options = new MqttConnectOptions();
             options.setCleanSession(false);
             mqttClient.connect(options);
+            System.out.println("WE ARE CONNECTED");
+            System.out.println("ClientId: "+mqttClient.getClientId());
         } catch (MqttException e) {
             Log.e("main", e.getMessage(), e);
         }
@@ -80,8 +88,6 @@ public class MainActivity extends Activity implements SensorEventListener {
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         mOrientation = mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION);
         mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-
-        IntentFilter intentFilter = new IntentFilter(Intent.ACTION_SEND);
 
         mXOrientView = (TextView) findViewById(R.id.xOrientView);
         mYOrientView = (TextView) findViewById(R.id.yOrientView);
@@ -118,14 +124,20 @@ public class MainActivity extends Activity implements SensorEventListener {
 
         String values = xValue + ";" + yValue + ";" + zValue;
         try {
-            MqttMessage message = new MqttMessage(values.getBytes());
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            PrintWriter pw = new PrintWriter(baos);
+            pw.println("{message: " + values + "}");
+            pw.println("{time: " + new Date().toString() + "}");
+            pw.close();
+            MqttMessage message = new MqttMessage(baos.toByteArray());
             if (sensorType == Sensor.TYPE_ACCELEROMETER) {
                 mqttClient.publish("ch/bfh/mqtt/android/1/accelerometer", message);
             } else if (sensorType == Sensor.TYPE_ORIENTATION) {
                 mqttClient.publish("ch/bfh/mqtt/android/1/orientation", message);
             }
-        } catch (MqttException e) {
-            e.printStackTrace();
+            System.out.println(message.toString());
+        } catch (Exception e) {
+            Log.e("main", e.getMessage(), e);
         }
     }
 
@@ -249,24 +261,5 @@ public class MainActivity extends Activity implements SensorEventListener {
         mZAccelSeries.addLast(null, Float.parseFloat(parts[2]));
 
         mAccelPlot.redraw();
-    }
-
-    public class MessageReceiver extends BroadcastReceiver {
-
-        private final static String MESSAGE_PATH_ORIENT = "orientValues";
-        private final static String MESSAGE_PATH_ACCEL = "accelValues";
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            System.out.println("MsgReceiver: onReceive");
-
-            String messagePath = intent.getStringExtra("messagePath");
-
-            if (messagePath.equals(MESSAGE_PATH_ORIENT)) {
-                updateOrientation(intent.getStringExtra("values"));
-            } else if (messagePath.equals(MESSAGE_PATH_ACCEL)) {
-                updateAcceleration(intent.getStringExtra("values"));
-            }
-        }
     }
 }
