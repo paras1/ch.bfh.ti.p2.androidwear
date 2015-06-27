@@ -16,3 +16,5 @@ dev/AccelerationOrientationDemo/mobile/mobile.iml
 dev/AccelerationOrientationDemo/wear/wear.iml
 
 dev/AccelerationOrientationDemo/AccelerationOrientationDemo.iml
+
+dev/AccelerationOrientationDemo/.idea/gradle.xml
